@@ -1,0 +1,8 @@
+.env
+certs/
+backups/*
+!backups/.gitkeep
+./node_modules
+./venv
+./.venv
+./pycache

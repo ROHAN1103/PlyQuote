@@ -1,0 +1,17 @@
+# Production overrides. Requires ENVIRONMENT=production and COOKIE_SECURE=true in .env,
+# plus TLS certificates in ./certs (fullchain.pem and privkey.pem).
+services:
+  backend:
+    environment:
+      ENVIRONMENT: production
+      COOKIE_SECURE: "true"
+      ENABLE_DOCS: ${ENABLE_DOCS:-false}
+  proxy:
+    ports: !override
+      - "80:80"
+      - "443:443"
+    volumes: !override
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://127.0.0.1/health"]

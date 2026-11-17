@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/schibsted-grotesk";
+
+/*
+  Design tokens. A quiet workshop ledger: cool slate paper, deep pine for actions,
+  and a single birch-veneer tone used sparingly (the edge of a plywood sheet).
+*/
+@theme {
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Schibsted Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #f3f5f4;
+  --color-surface: #ffffff;
+  --color-line: #d8ddda;
+  --color-ink: #1c2a2b;
+  --color-muted: #5d6c6a;
+  --color-pine: #24483f;
+  --color-pine-hover: #1b3a32;
+  --color-pine-soft: #e3ede9;
+  --color-birch: #d9b985;
+  --color-birch-deep: #b8925a;
+  --color-birch-soft: #f1e4cb;
+  --color-danger: #a82f26;
+  --color-danger-soft: #fbeae8;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
+  :focus-visible { outline: 2px solid var(--color-pine); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
