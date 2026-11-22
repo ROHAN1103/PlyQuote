@@ -29,6 +29,9 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       ENABLE_DOCS: ${ENABLE_DOCS:-true}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UPLOAD_DIR: /srv/backend/data/uploads
+    volumes:
+      - uploads:/srv/backend/data/uploads
     depends_on:
       db: { condition: service_healthy }
     networks: [internal]
@@ -60,3 +63,4 @@ networks:
 
 volumes:
   pgdata:
+  uploads:

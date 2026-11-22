@@ -74,3 +74,18 @@ describe("api client", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("api client uploads", () => {
+  it("sends FormData untouched, without a JSON content type", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === "/api/v1/auth/csrf" ? jsonResponse(200, { csrf_token: "t.s" }) : jsonResponse(200, { ok: true }),
+    );
+    const form = new FormData();
+    form.append("file", new Blob(["x"], { type: "image/png" }), "logo.png");
+    await api.upload("/settings/company/logo", form);
+    const init = fetchMock.mock.calls.find((c) => c[0] === "/api/v1/settings/company/logo")![1];
+    expect(init.body).toBe(form);
+    expect(init.headers["Content-Type"]).toBeUndefined();
+    expect(init.headers["X-CSRF-Token"]).toBe("t.s");
+  });
+});

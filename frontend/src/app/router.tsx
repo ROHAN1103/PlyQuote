@@ -6,7 +6,7 @@ import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import MaterialsPage from "@/features/materials/pages/MaterialsPage";
 import QuotationsPage from "@/features/quotations/pages/QuotationsPage";
-import SettingsPage from "@/features/settings/SettingsPage";
+import SettingsPage from "@/features/settings/pages/SettingsPage";
 import TemplatesPage from "@/features/templates/TemplatesPage";
 
 export const routes: RouteObject[] = [

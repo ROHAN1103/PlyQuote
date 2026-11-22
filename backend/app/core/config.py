@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     login_ip_multiplier: int = Field(default=4, ge=1)  # per-IP limit = attempts * multiplier
     login_window_minutes: int = Field(default=15, ge=1)
 
+    # File storage (company logo). Mounted as a Docker volume in production.
+    upload_dir: str = "./data/uploads"
+    max_logo_bytes: int = 2 * 1024 * 1024
+
     # Password policy
     min_password_length: int = Field(default=12, ge=8)
 

@@ -5,7 +5,8 @@ WORKDIR /srv/backend
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-RUN useradd --system --uid 10001 --home /srv/backend appuser
+RUN useradd --system --uid 10001 --home /srv/backend appuser \
+ && mkdir -p /srv/backend/data/uploads && chown -R appuser /srv/backend/data
 COPY --chown=appuser:appuser . .
 RUN chmod +x docker/entrypoint.sh
 USER appuser

@@ -3,9 +3,11 @@
 A quotation management and calculation system for interior-design companies that build plywood furniture.
 Modular monolith: React + TypeScript frontend, FastAPI backend, PostgreSQL.
 
-**Status: Phase 1 (Foundation) complete.** Roadmap: 2 Material catalogue -> 3 Quotation builder -> 4 Calculation engine -> 5 Documents -> 6 History and revisions -> 7 Production readiness. See `docs/DECISIONS.md` for the agreed business rules.
+**Status: Phases 1 (Foundation) and 2 (Material catalogue, Settings) complete.** Roadmap: 3 Quotation builder -> 4 Calculation engine -> 5 Documents -> 6 History and revisions -> 7 Production readiness. See `docs/DECISIONS.md` for the agreed business rules.
 
 ## What works now
+- **Materials:** add, edit, search, filter by category/status, deactivate/reactivate, paginate; exact decimal rates; duplicate protection
+- **Settings:** company details, GSTIN, logo upload, GST (off by default), validity, payment terms, T&C, footer, signatory
 - Secure sign-in/sign-out (Argon2id, server-side sessions, HTTP-only cookie, CSRF, rate limiting)
 - Protected app shell with the five main sections (placeholders until their phases)
 - PostgreSQL schema + Alembic migrations (`companies`, `users`, `sessions`, `login_attempts`)
@@ -20,6 +22,9 @@ docker compose up --build -d            # migrations run automatically on backen
 docker compose exec -e ADMIN_PASSWORD='choose-a-12+-char-password' backend \
     python -m scripts.create_admin --username admin --company "Your Company"
 # open http://localhost:8080
+
+# optional: load a starter material list (rates are 0 - set real rates in Materials)
+docker compose exec backend python -m scripts.seed_materials
 ```
 
 ## Local development (without Docker)
@@ -36,7 +41,8 @@ cd frontend && npm ci && npm run dev     # http://localhost:5173
 
 ## Tests
 ```sh
-cd backend && pytest        # 25 tests (SQLite for speed; integration tests against PostgreSQL arrive with Phase 2+)
+cd backend && pytest                                   # SQLite, fast
+cd backend && TEST_DATABASE_URL=postgresql://user:pw@localhost:5432/pqb_test pytest   # real PostgreSQL (use a throwaway database: its schema is dropped)
 cd frontend && npm test && npm run typecheck
 ```
 
@@ -53,7 +59,7 @@ Migrations run on every backend start (`alembic upgrade head`). The backend trus
 ./scripts/backup.sh                               # -> backups/pqb-<timestamp>.dump (keeps newest 30)
 ./scripts/restore.sh backups/pqb-<timestamp>.dump # destructive; asks for confirmation
 ```
-Schedule `backup.sh` with cron and copy dumps off the server. Uploaded logos (Phase 2) will live in a separate volume and need to be backed up too.
+Schedule `backup.sh` with cron and copy dumps off the server. `backup.sh` also archives the uploads volume (company logo); `restore.sh` accepts the uploads archive as an optional second argument.
 
 ## Layout
 `backend/app/{api,core,models,schemas,repositories,services,utils,tests}` - thin routers, business rules in services.

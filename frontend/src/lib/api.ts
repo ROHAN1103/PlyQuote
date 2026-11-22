@@ -55,7 +55,9 @@ async function toApiError(res: Response): Promise<ApiError> {
 
 async function request<T>(method: string, path: string, body?: unknown, isRetry = false): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // FormData (file uploads) must set its own multipart boundary, so no JSON Content-Type for it.
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (!SAFE.has(method)) headers["X-CSRF-Token"] = await ensureCsrf();
 
   let res: Response;
@@ -64,7 +66,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
       method,
       headers,
       credentials: "same-origin",
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, "network_error", "Can't reach the server. Check your connection and try again.");
@@ -87,4 +89,5 @@ export const api = {
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body ?? {}),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body ?? {}),
   delete: <T>(path: string) => request<T>("DELETE", path),
+  upload: <T>(path: string, form: FormData) => request<T>("POST", path, form),
 };
