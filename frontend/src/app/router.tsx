@@ -5,9 +5,10 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 import { RequireAuth } from "@/features/auth/components/RequireAuth";
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import MaterialsPage from "@/features/materials/pages/MaterialsPage";
+import QuotationBuilderPage from "@/features/quotations/pages/QuotationBuilderPage";
 import QuotationsPage from "@/features/quotations/pages/QuotationsPage";
 import SettingsPage from "@/features/settings/pages/SettingsPage";
-import TemplatesPage from "@/features/templates/TemplatesPage";
+import TemplatesPage from "@/features/templates/pages/TemplatesPage";
 
 export const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage /> },
@@ -19,6 +20,8 @@ export const routes: RouteObject[] = [
         children: [
           { path: "/", element: <DashboardPage /> },
           { path: "/quotations", element: <QuotationsPage /> },
+          { path: "/quotations/new", element: <QuotationBuilderPage /> },
+          { path: "/quotations/:id", element: <QuotationBuilderPage /> },
           { path: "/materials", element: <MaterialsPage /> },
           { path: "/templates", element: <TemplatesPage /> },
           { path: "/settings", element: <SettingsPage /> },

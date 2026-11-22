@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { trimDecimal } from "@/utils/formatting";
 import type { Material, MaterialPayload } from "../types";
 
 // Up to 10 whole digits and 4 decimals, matching NUMERIC(14,4) on the server.
@@ -24,10 +25,7 @@ export const emptyMaterialForm: MaterialFormValues = {
   description: "", is_active: true,
 };
 
-/** "2500.0000" -> "2500", "80.5000" -> "80.5": friendlier to edit; the value is unchanged. */
-export function trimRate(rate: string): string {
-  return rate.includes(".") ? rate.replace(/0+$/, "").replace(/\.$/, "") : rate;
-}
+export const trimRate = trimDecimal;
 
 export function toFormValues(m: Material): MaterialFormValues {
   return {

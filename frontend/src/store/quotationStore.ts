@@ -1,2 +1,15 @@
-// Builder draft state (Zustand) is introduced in Phase 3 with the quotation builder.
-export {};
+import { create } from "zustand";
+
+/**
+ * UI-only state for the quotation builder. The form's data lives in React Hook Form (the single source
+ * of truth for what the user has typed); this store only remembers which item is open.
+ */
+type BuilderUiState = {
+  expandedKey: string | null;
+  setExpanded: (key: string | null) => void;
+};
+
+export const useBuilderUi = create<BuilderUiState>((set) => ({
+  expandedKey: null,
+  setExpanded: (key) => set({ expandedKey: key }),
+}));

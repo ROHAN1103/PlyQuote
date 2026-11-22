@@ -28,3 +28,16 @@ These were agreed before Phase 1 and are binding for later phases. Change them o
 21. **Logo.** PNG/JPEG/WebP only (no SVG), max 2 MB. The image is decoded, validated, downscaled to 800 px and re-encoded as PNG, then stored under a server-generated name in `UPLOAD_DIR` (a Docker volume). Included in backups.
 22. **Seed data is optional**: `python -m scripts.seed_materials` loads a starter list with rates of 0.
 23. **Test strategy.** The backend suite runs on SQLite by default and on real PostgreSQL when `TEST_DATABASE_URL` is set (schema built by the Alembic migrations). Run both before a release.
+
+## Phase 3 decisions (quotation builder)
+
+24. **Numbering.** `QT-YYYY-NNNN`, e.g. `QT-2026-0001`. The year is the year *in the business time zone* (`TIMEZONE`, default `Asia/Kolkata`), not the server's. Allocated by one atomic `UPDATE ... RETURNING` on `number_sequences` in the same transaction as the insert: concurrent saves queue and never share a number, and a failed save does not consume one. Deleted drafts leave gaps and numbers are never reused. Covered by a multi-threaded test on real PostgreSQL.
+25. **Drafts are lenient.** Only the client name is required to save a draft; project, phone, address and even items can come later. Finalizing (Phase 6) will require a complete quotation.
+26. **Saving replaces the whole quotation** (`PUT` with the full item list). An item that carries a known id is updated in place and keeps its identity; items without an id are created; items no longer listed are removed. List order is item order. Ids supplied for items that don't belong to the quotation are ignored.
+27. **No silent overwrites.** Every save carries the `row_version` it was loaded with. A stale save is refused (`stale_quotation`), changes nothing, and the UI offers to load the latest version.
+28. **Totals are never accepted from the client.** The backend engine computes item and quotation totals on every save. The builder's live figures come from the stateless `POST /calculations/preview`, which runs the same engine. The browser contains no pricing arithmetic.
+29. **Company details are snapshotted** onto each quotation when it is created (name, address, phone, email, GSTIN, footer, signatory), so editing Settings never changes an existing quotation. The company's GST settings are snapshotted into `calculation_settings` for Phase 4.
+30. **Only drafts are editable or deletable.** Other statuses return `quotation_not_editable` / `quotation_not_deletable`. "Expired" is derived (finalized or sent and past `valid_until`), never stored.
+31. **Phase 3 prices manual items only.** The schema, tables and API already accept `measurement` and `material`; the engine refuses them with a clear message until Phase 4, and the UI shows them as "Coming soon".
+32. **Furniture templates are presets, not links.** Adding one copies its values into the item; later edits or removal never affect quotations. Removal deactivates; names are unique per company (case-insensitive).
+33. **Client details live on the quotation** (`client_details` JSON), with `client_name` copied into its own indexed column for searching and sorting. There is no client database.

@@ -38,3 +38,16 @@ describe("percent <-> fraction (string based, no floats)", () => {
     expect(percentToFraction("0.07")).toBe("0.0007"); // 0.07 * 0.01 is 0.0007000000000000001 in float maths
   });
 });
+
+import { formatDate, trimDecimal } from "./formatting";
+
+describe("formatDate / trimDecimal", () => {
+  it("formats date-only strings without a timezone shift", () => {
+    expect(formatDate("2026-11-18")).toBe("18 Nov 2026");
+    expect(formatDate("2026-01-01")).toBe("01 Jan 2026");
+    expect(formatDate("")).toBe("—");
+    expect(formatDate(null)).toBe("—");
+  });
+  it.each([["2500.0000", "2500"], ["80.5000", "80.5"], ["0.0525", "0.0525"], ["100", "100"], ["10.0000", "10"], ["0.0000", "0"]])(
+    "trimDecimal(%s) = %s", (a, b) => expect(trimDecimal(a)).toBe(b));
+});

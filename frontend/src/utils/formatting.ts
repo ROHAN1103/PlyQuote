@@ -15,3 +15,16 @@ export function formatINR(value: string | number | null | undefined): string {
 export function isZeroAmount(value: string | number | null | undefined): boolean {
   return value !== null && value !== undefined && value !== "" && Number(value) === 0;
 }
+
+/** "2500.0000" -> "2500", "80.5000" -> "80.5": friendlier to edit; the value is unchanged. */
+export function trimDecimal(value: string): string {
+  return value.includes(".") ? value.replace(/0+$/, "").replace(/\.$/, "") : value;
+}
+
+/** "2026-11-18" -> "18 Nov 2026". Date-only strings are parsed as local dates (no timezone shift). */
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "—";
+  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(y, m - 1, d));
+}
