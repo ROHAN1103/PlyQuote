@@ -88,7 +88,7 @@ export default function Portfolio() {
                   <div style={{ fontSize:'.72rem', color:'var(--ac)', letterSpacing:'.1em', marginBottom:6 }}>{lightbox.type} · {lightbox.area}, Bangalore</div>
                   <div className="serif" style={{ fontSize:'1.6rem', fontWeight:500 }}>{lightbox.title}</div>
                 </div>
-                <div style={{ display:'flex', gap:10' }}>
+                <div style={{ display:'flex', gap:10 }}>
                   <button onClick={() => navigate('/contact')} className="btn-p" style={{ padding:'10px 20px', fontSize:'.83rem' }}>Enquire</button>
                   <button onClick={() => setLightbox(null)} style={{ background:'var(--sf)', border:'1px solid var(--sf2)', borderRadius:4, padding:'10px 16px', cursor:'pointer', fontSize:'.83rem', color:'var(--md)' }}>Close</button>
                 </div>
