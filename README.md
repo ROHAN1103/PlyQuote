@@ -3,9 +3,11 @@
 A quotation management and calculation system for interior-design companies that build plywood furniture.
 Modular monolith: React + TypeScript frontend, FastAPI backend, PostgreSQL.
 
-**Status: Phases 1 (Foundation), 2 (Material catalogue, Settings) and 3 (Quotation builder) complete.** Roadmap: 4 Calculation engine -> 5 Documents -> 6 History and revisions -> 7 Production readiness. See `docs/DECISIONS.md` for the agreed business rules.
+**Status: Phases 1-4 complete (foundation, materials and settings, quotation builder, calculation engine).** Roadmap: 5 Documents -> 6 History and revisions -> 7 Production readiness. See `docs/DECISIONS.md` for the agreed business rules.
 
 ## What works now
+- **Three pricing methods in one quotation:** manual (quantity x rate), by measurement (feet and inches, six formulas, minimum charge, rounding) and by materials (catalogue lines, labour and other costs)
+- **Profit** as markup, margin or a fixed amount, with a guard against counting it twice; **charges, discount, GST** (exclusive or inclusive) and optional round-off to the rupee
 - **Quotation builder:** client and project details, multiple furniture items (add, duplicate, reorder, remove), manual pricing with live backend-calculated totals, draft saving, safe numbering (`QT-2026-0001`), unsaved-changes and two-tab protection
 - **Quotations list:** search, status filter, pagination, delete drafts
 - **Furniture templates:** reusable item presets, added to a quotation in one click
@@ -72,5 +74,6 @@ Schedule `backup.sh` with cron and copy dumps off the server. `backup.sh` also a
 - The Docker images and Compose files were written and their Nginx configuration tested, but `docker compose up` itself has not been run in the authoring environment - run the Quick start and report anything that fails.
 - Offline/PWA support is not implemented (the architecture leaves room for it).
 - The JS bundle is a single chunk (~550 kB); route-level code splitting is planned for Phase 7.
-- Quotations currently price **manual items only**; measurement and material pricing, profit, discounts, extra charges and GST are Phase 4. Totals are the sum of item amounts until then.
+- Material lines show the catalogue price they were added with; there is no "catalogue price has changed since" hint yet, and no sheet-cutting or wastage optimisation (by design for V1).
+- Nothing can be finalised, sent or exported yet (Phases 5 and 6).
 - A draft keeps the company details it was created with; there is no "refresh company details" action yet.

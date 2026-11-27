@@ -10,6 +10,7 @@ from pydantic import (
 from app.schemas.calculation import Totals
 from app.schemas.company import SignatureSettings
 from app.schemas.quotation_item import ItemIn, ItemOut
+from app.schemas.quotation_settings import SettingsData
 from app.schemas.types import Money
 
 PHONE_RE = re.compile(r"^[0-9+()\-\s]{0,30}$")
@@ -56,6 +57,8 @@ class QuotationIn(BaseModel):
     payment_terms: Text(2000) = ""
     terms_and_conditions: Text(10000) = ""
     items: Annotated[list[ItemIn], Field(max_length=200)] = []
+    # None: on create, use the company's defaults; on update, leave the quotation's settings unchanged.
+    settings: SettingsData | None = None
 
     @field_validator("valid_until")
     @classmethod
@@ -100,6 +103,7 @@ class QuotationOut(BaseModel):
     payment_terms: str
     terms_and_conditions: str
     company: CompanySnapshot
+    settings: SettingsData
     items: list[ItemOut]
     totals: Totals
     created_at: datetime
@@ -127,3 +131,4 @@ class QuotationDefaults(BaseModel):
     valid_until: date
     payment_terms: str
     terms_and_conditions: str
+    settings: SettingsData

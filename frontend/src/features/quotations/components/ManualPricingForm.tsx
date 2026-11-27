@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatINR } from "@/utils/formatting";
 import type { QuotationFormValues } from "../schemas/quotationSchema";
-import { UNIT_SUGGESTIONS } from "../types";
+import { UNIT_SUGGESTIONS, type ItemResult } from "../types";
+import { ProfitFields } from "./ProfitFields";
 
 /** Manual pricing: amount = quantity × rate. The amount shown is calculated by the backend. */
-export function ManualPricingForm({ index, amount }: { index: number; amount: string | null }) {
+export function ManualPricingForm({ index, result }: { index: number; result: ItemResult | null }) {
   const { register, formState: { errors } } = useFormContext<QuotationFormValues>();
   const e = errors.items?.[index];
   const id = (f: string) => `item-${index}-${f}`;
@@ -35,9 +36,10 @@ export function ManualPricingForm({ index, amount }: { index: number; amount: st
           <Input id={id("unit_rate")} inputMode="decimal" placeholder="0.00" {...a("unit_rate")} {...register(`items.${index}.unit_rate`)} />
         </FormField>
       </div>
+      <ProfitFields index={index} />
       <p className="flex items-baseline justify-between rounded-md bg-paper px-3 py-2 text-sm">
         <span className="text-muted">Amount</span>
-        <span className="text-base font-semibold tabular-nums" data-testid={`item-${index}-amount`}>{amount ? formatINR(amount) : "…"}</span>
+        <span className="text-base font-semibold tabular-nums" data-testid={`item-${index}-amount`}>{result ? formatINR(result.total) : "…"}</span>
       </p>
     </div>
   );

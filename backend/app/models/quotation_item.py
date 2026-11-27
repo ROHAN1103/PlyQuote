@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base, JSONType, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.item_material import ItemMaterial
     from app.models.quotation import Quotation
 
 
@@ -40,3 +41,6 @@ class QuotationItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default="0")
 
     quotation: Mapped["Quotation"] = relationship(back_populates="items")
+    materials: Mapped[list["ItemMaterial"]] = relationship(
+        back_populates="item", cascade="all, delete-orphan", order_by="ItemMaterial.position"
+    )

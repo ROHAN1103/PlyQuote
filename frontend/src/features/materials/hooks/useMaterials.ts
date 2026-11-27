@@ -4,9 +4,9 @@ import type { MaterialFilters, MaterialPayload } from "../types";
 
 const KEY = ["materials"] as const;
 
-export function useMaterials(filters: MaterialFilters) {
+export function useMaterials(filters: MaterialFilters, options: { enabled?: boolean } = {}) {
   // keepPreviousData: the table doesn't blank out while a new search/page loads.
-  return useQuery({ queryKey: [...KEY, filters], queryFn: () => materialsApi.list(filters), placeholderData: keepPreviousData });
+  return useQuery({ queryKey: [...KEY, filters], queryFn: () => materialsApi.list(filters), placeholderData: keepPreviousData, enabled: options.enabled ?? true });
 }
 
 function useInvalidating<TArgs, TResult>(fn: (a: TArgs) => Promise<TResult>) {

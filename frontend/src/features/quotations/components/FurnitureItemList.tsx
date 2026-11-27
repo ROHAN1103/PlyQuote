@@ -8,17 +8,18 @@ import { useTemplates } from "@/features/templates/hooks/useTemplates";
 import { trimDecimal } from "@/utils/formatting";
 import { useBuilderUi } from "@/store/quotationStore";
 import { newItem, type QuotationFormValues } from "../schemas/quotationSchema";
+import type { ItemResult } from "../types";
 import { FurnitureItemForm } from "./FurnitureItemForm";
 
-type Props = { itemTotals: (string | null)[] };
+type Props = { itemResults: (ItemResult | null)[] };
 
 const isBlank = (i?: Partial<QuotationFormValues["items"][number]>) => !i?.item_name?.trim() && !i?.unit_rate?.trim() && !i?.description?.trim();
 
-export function FurnitureItemList({ itemTotals }: Props) {
+export function FurnitureItemList({ itemResults }: Props) {
   const { control, getValues, setFocus, formState: { errors, submitCount } } = useFormContext<QuotationFormValues>();
   // keyName: our own `id` (the server's item id) must survive; RHF's list key gets a different name.
   const { fields, append, insert, remove, move } = useFieldArray({ control, name: "items", keyName: "fieldKey" });
-  const { expandedKey, setExpanded } = useBuilderUi();
+  const { expandedKey, setExpanded, openRequest, requestOpen } = useBuilderUi();
   // Saved items keep their server id across a save (so an open item stays open); unsaved ones use RHF's key.
   const keyOf = (f: { id?: string; fieldKey: string }) => f.id ?? f.fieldKey;
   const { data: templates } = useTemplates();
@@ -32,7 +33,7 @@ export function FurnitureItemList({ itemTotals }: Props) {
     const key = target && keyOf(target);
     if (index < 0 || !key) return;
     setExpanded(key);
-    const field = (["item_name", "quantity", "unit", "unit_rate", "description"] as const).find((f) => errors.items?.[index]?.[f]);
+    const field = (["item_name", "quantity", "unit", "unit_rate", "width", "height", "depth", "length", "description"] as const).find((f) => errors.items?.[index]?.[f]);
     if (field) setTimeout(() => setFocus(`items.${index}.${field}`), 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitCount]);
@@ -49,6 +50,14 @@ export function FurnitureItemList({ itemTotals }: Props) {
       pendingOpen.current = null;
     }
   }, [fields, setExpanded]);
+
+  useEffect(() => {
+    if (openRequest === null) return;
+    const target = fields[openRequest];
+    if (target) setExpanded(keyOf(target));
+    requestOpen(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest]);
 
   const add = (values = newItem()) => {
     pendingOpen.current = fields.length;
@@ -102,7 +111,7 @@ export function FurnitureItemList({ itemTotals }: Props) {
               key={field.fieldKey}
               index={index}
               expanded={expandedKey === keyOf(field)}
-              total={itemTotals[index] ?? null}
+              result={itemResults[index] ?? null}
               isFirst={index === 0}
               isLast={index === fields.length - 1}
               onToggle={() => setExpanded(expandedKey === keyOf(field) ? null : keyOf(field))}

@@ -70,8 +70,9 @@ def test_defaults_come_from_company_settings(client, auth, today, db_session, ad
     admin.company.settings = {"quotation_validity_days": 15, "payment_terms": "30% advance", "terms_and_conditions": "Standard T&C"}
     db_session.commit()
     d = client.get(f"{URL}/defaults").json()
-    assert d == {"quotation_date": "2026-11-18", "valid_until": "2026-12-03",
-                 "payment_terms": "30% advance", "terms_and_conditions": "Standard T&C"}
+    assert d["quotation_date"] == "2026-11-18" and d["valid_until"] == "2026-12-03"
+    assert d["payment_terms"] == "30% advance" and d["terms_and_conditions"] == "Standard T&C"
+    assert d["settings"]["gst"] == {"enabled": False, "rate": None, "prices_include_tax": False}
 
 
 # ================= create =================
@@ -81,8 +82,9 @@ def test_create_assigns_number_and_computes_totals(client, auth, today):
     assert q["revision"] == 1 and q["row_version"] == 1 and q["currency"] == "INR"
     assert [i["total"] for i in q["items"]] == ["25000.00", "3001.00", "100.00"]
     assert [i["position"] for i in q["items"]] == [0, 1, 2]
-    assert q["totals"] == {"subtotal": "28101.00", "additional_charges": "0.00", "discount": "0.00",
-                           "tax_amount": "0.00", "grand_total": "28101.00"}
+    assert q["totals"] == {"subtotal": "28101.00", "additional_charges": "0.00", "discount": "0.00", "taxable_amount": "28101.00",
+                           "tax_amount": "0.00", "rounding_adjustment": "0.00", "grand_total": "28101.00",
+                           "material_cost": "0.00", "profit": "0.00"}
     assert q["items"][2]["unit_rate"] == "33.3333" and q["items"][2]["quantity"] == "3.0000"
     assert q["items"][0]["calculated_quantity"] == q["items"][0]["chargeable_quantity"] == "1.0000"
 
@@ -148,7 +150,6 @@ def test_gst_settings_are_snapshotted_for_phase_4(client, auth, today, db_sessio
     ({"items": [item(rate="-1")]}, "items.0.unit_rate"),
     ({"items": [item(rate="1.23456")]}, "items.0.unit_rate"),
     ({"items": [item(name="  ")]}, "items.0.item_name"),
-    ({"items": [item(unit="")]}, "items.0.unit"),
     ({"items": [item()] * 201}, "items"),
 ])
 def test_invalid_input(client, auth, today, over, field):
@@ -157,15 +158,20 @@ def test_invalid_input(client, auth, today, over, field):
     assert any(f["field"].startswith(field) for f in r.json()["error"]["fields"]), r.json()
 
 
-def test_future_pricing_methods_are_refused_with_a_clear_message(client, auth, today):
+def test_an_incomplete_item_is_refused_naming_the_exact_input(client, auth, today):
     r = client.post(URL, json=body(items=[item(), item(pricing_method="measurement")]), headers=auth)
     assert r.status_code == 422 and r.json()["error"]["code"] == "calculation_error"
     f = r.json()["error"]["fields"][0]
-    assert f["field"] == "items.1" and "not available yet" in f["message"]
+    assert f["field"] == "items.1.measurement.formula" and "how this item is measured" in f["message"]
+
+
+def test_a_manual_item_needs_a_unit(client, auth, today):
+    r = client.post(URL, json=body(items=[item(unit="")]), headers=auth)
+    assert r.status_code == 422 and r.json()["error"]["fields"][0]["field"] == "items.0.unit"
 
 
 def test_a_failed_create_does_not_consume_a_number(client, auth, today):
-    client.post(URL, json=body(items=[item(pricing_method="measurement")]), headers=auth)
+    client.post(URL, json=body(items=[item(qty="0")]), headers=auth)
     assert create(client, auth)["quotation_number"] == "QT-2026-0001"
 
 
@@ -246,7 +252,7 @@ def test_only_drafts_can_be_edited_or_deleted(client, auth, today, db_session):
 def test_invalid_update_leaves_the_quotation_unchanged(client, auth, today):
     q = create(client, auth)
     bad = with_update(q)
-    bad["items"].append(item(pricing_method="measurement"))
+    bad["items"].append(item(pricing_method="measurement"))   # no measurement block: cannot be priced
     assert client.put(f"{URL}/{q['id']}", json=bad, headers=auth).status_code == 422
     after = client.get(f"{URL}/{q['id']}").json()
     assert after["row_version"] == 1 and len(after["items"]) == 1
@@ -368,7 +374,7 @@ def test_preview_matches_what_saving_stores(client, auth, today):
 def test_preview_with_no_items_and_with_bad_items(client, auth):
     assert client.post(PREVIEW, json={"items": []}, headers=auth).json()["totals"]["grand_total"] == "0.00"
     assert client.post(PREVIEW, json={"items": [item(qty="0")]}, headers=auth).status_code == 422
-    assert client.post(PREVIEW, json={"items": [item(pricing_method="material")]}, headers=auth).status_code == 422
+    assert client.post(PREVIEW, json={"items": [item(pricing_method="material")]}, headers=auth).status_code == 422   # no materials
 
 
 def test_preview_stores_nothing_and_needs_auth_and_csrf(client, auth, db_session):

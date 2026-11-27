@@ -4,41 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetCsrfToken } from "@/lib/api";
 import { useBuilderUi } from "@/store/quotationStore";
 import { apiError, installBackend, jsonResponse, renderApp, type Handler, type Req } from "@/test/utils";
-import type { Quotation, QuotationItem, QuotationSummary } from "./types";
+import {
+  defaultsHandler, getQuote, item, noTemplates, previewHandler, quote, summary, totals,
+} from "@/test/quotationFixtures";
+import type { QuotationSummary } from "./types";
 
 const fetchMock = vi.fn();
 const SLOW = { timeout: 4000 };
 
-const DEFAULTS = { quotation_date: "2026-11-18", valid_until: "2026-12-18", payment_terms: "50% advance", terms_and_conditions: "Standard T&C" };
-const ZERO = { additional_charges: "0.00", discount: "0.00", tax_amount: "0.00" };
-
-const item = (over: Partial<QuotationItem> = {}): QuotationItem => ({
-  id: "i1", position: 0, pricing_method: "manual", item_name: "Wardrobe", description: "", quantity: "1.0000", unit: "pc",
-  unit_rate: "67200.0000", calculated_quantity: "1.0000", chargeable_quantity: "1.0000", total: "67200.00", ...over,
-});
-const quote = (over: Partial<Quotation> = {}): Quotation => ({
-  id: "q1", quotation_number: "QT-2026-0001", status: "draft", effective_status: "draft", currency: "INR", revision: 1, row_version: 3,
-  project_name: "Sharma Residence", project_location: "", client: { name: "R. Sharma", phone: "", email: null, address: "" },
-  quotation_date: "2026-11-18", valid_until: "2026-12-18", notes: "", payment_terms: "", terms_and_conditions: "",
-  company: { name: "Acme", address: "", phone: "", email: null, gstin: "", document_footer: "" },
-  items: [item(), item({ id: "i2", position: 1, item_name: "TV Unit", unit_rate: "25000.0000", total: "25000.00" })],
-  totals: { subtotal: "92200.00", grand_total: "92200.00", ...ZERO }, created_at: "", updated_at: "", ...over,
-});
-const summary = (over: Partial<QuotationSummary> = {}): QuotationSummary => ({
-  id: "q1", quotation_number: "QT-2026-0001", status: "draft", effective_status: "draft", project_name: "Sharma Residence",
-  client_name: "R. Sharma", quotation_date: "2026-11-18", valid_until: "2026-12-18", grand_total: "92200.00", revision: 1, updated_at: "", ...over,
-});
-
-/** The fake preview returns numbers that browser-side arithmetic could never produce, to prove the UI shows the backend's. */
-const previewHandler: Handler = (r) => r.method === "POST" && r.path === "/calculations/preview"
-  ? jsonResponse(200, {
-      items: (r.body.items as unknown[]).map(() => ({ pricing_method: "manual", calculated_quantity: "1.0000", chargeable_quantity: "1.0000", unit: "pc", unit_rate: "1.0000", total: "999.00" })),
-      totals: { subtotal: "123456.00", grand_total: "123456.00", ...ZERO },
-    })
-  : undefined;
-const defaultsHandler: Handler = (r) => (r.path === "/quotations/defaults" ? jsonResponse(200, DEFAULTS) : undefined);
-const noTemplates: Handler = (r) => (r.path === "/furniture-templates" ? jsonResponse(200, []) : undefined);
-const getQuote = (q: Quotation): Handler => (r) => (r.method === "GET" && r.path === `/quotations/${q.id}` ? jsonResponse(200, q) : undefined);
 const page = (items: QuotationSummary[], total = items.length) => ({ items, total, page: 1, page_size: 20, pages: total ? 1 : 0 });
 const list = (items: QuotationSummary[]): Handler => (r) => (r.method === "GET" && r.path === "/quotations" ? jsonResponse(200, page(items)) : undefined);
 
@@ -121,7 +94,7 @@ describe("Quotation builder: new", () => {
     await userEvent.type(await screen.findByLabelText("Item name"), "Study table");
     await userEvent.clear(screen.getByLabelText("Quantity"));
     await userEvent.type(screen.getByLabelText("Quantity"), "2");
-    await userEvent.type(screen.getByLabelText(/Rate/), "1500.50");
+    await userEvent.type(screen.getByLabelText(/Rate \(₹ per unit\)/), "1500.50");
 
     // 2 x 1500.50 = 3001.00 in the browser; the fake backend says 999.00 / 1,23,456.00, and that is what must be shown.
     await waitFor(() => expect(screen.getByTestId("item-0-amount")).toHaveTextContent("₹999.00"), SLOW);
@@ -129,20 +102,21 @@ describe("Quotation builder: new", () => {
 
     const req = [...calls].reverse().find((c) => c.path === "/calculations/preview") as Req;
     expect(req.body.items).toEqual([{ pricing_method: "manual", item_name: "Study table", description: "", quantity: "2", unit: "pc", unit_rate: "1500.50" }]);
+    expect(req.body.settings.gst).toEqual({ enabled: false, rate: null, prices_include_tax: false });
   });
 
-  it("offers measurement and material pricing as coming soon, not selectable", async () => {
+  it("offers all three pricing methods", async () => {
     installBackend(fetchMock, defaultsHandler, noTemplates, previewHandler);
     renderApp("/quotations/new");
     await userEvent.click(await screen.findByRole("button", { name: "Add your first item" }));
-    expect(await screen.findByLabelText(/Manual/)).toBeChecked();
-    expect(screen.getByLabelText(/By measurement/)).toBeDisabled();
-    expect(screen.getByLabelText(/By materials/)).toBeDisabled();
-    expect(screen.getAllByText("Coming soon").length).toBe(2);
+    expect(await screen.findByRole("radio", { name: /Manual/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /By measurement/ })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: /By materials/ })).toBeEnabled();
+    expect(screen.queryByText("Coming soon")).not.toBeInTheDocument();
   });
 
   it("saves a new quotation, sending only what was entered (no totals), then opens it", async () => {
-    const saved = quote({ items: [item()], totals: { subtotal: "67200.00", grand_total: "67200.00", ...ZERO } });
+    const saved = quote({ items: [item()], totals: totals({ subtotal: "67200.00", grand_total: "67200.00" }) });
     const calls = installBackend(fetchMock, defaultsHandler, noTemplates, previewHandler, getQuote(saved),
       (r) => (r.method === "POST" && r.path === "/quotations" ? jsonResponse(201, saved) : undefined));
     renderApp("/quotations/new");
@@ -150,7 +124,7 @@ describe("Quotation builder: new", () => {
     await userEvent.type(screen.getByLabelText(/Project name/), "Sharma Residence");
     await userEvent.click(screen.getByRole("button", { name: "Add your first item" }));
     await userEvent.type(await screen.findByLabelText("Item name"), "Wardrobe");
-    await userEvent.type(screen.getByLabelText(/Rate/), "67200");
+    await userEvent.type(screen.getByLabelText(/Rate \(₹ per unit\)/), "67200");
     await userEvent.click(screen.getByRole("button", { name: "Save draft" }));
 
     await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.path === "/quotations")).toBe(true));
@@ -159,6 +133,8 @@ describe("Quotation builder: new", () => {
       project_name: "Sharma Residence", project_location: "", client: { name: "R. Sharma", phone: "", email: null, address: "" },
       quotation_date: "2026-11-18", valid_until: "2026-12-18", notes: "", payment_terms: "50% advance", terms_and_conditions: "Standard T&C",
       items: [{ pricing_method: "manual", item_name: "Wardrobe", description: "", quantity: "1", unit: "pc", unit_rate: "67200" }],
+      settings: { charges: { labour: "0", transportation: "0", installation: "0", miscellaneous: "0" }, discount: { type: "none", value: "0" },
+                  gst: { enabled: false, rate: null, prices_include_tax: false }, round_to_rupee: false },
     });
     expect(await screen.findByRole("heading", { name: "QT-2026-0001" })).toBeInTheDocument();
   });
@@ -327,7 +303,7 @@ describe("Add from template", () => {
     expect(screen.getByLabelText(/Description/)).toHaveValue("Wall mounted");
     expect(screen.getByLabelText("Quantity")).toHaveValue("2");
     expect(screen.getByLabelText("Unit")).toHaveValue("set");
-    expect(screen.getByLabelText(/Rate/)).toHaveValue("25000");
+    expect(screen.getByLabelText(/Rate \(₹ per unit\)/)).toHaveValue("25000");
   });
 
   it("hides the template picker when there are no templates", async () => {

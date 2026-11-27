@@ -66,7 +66,9 @@ class Quotation(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
     additional_charges: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
     discount: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
+    taxable_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
     tax_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
+    rounding_adjustment: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
     grand_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default=ZERO_MONEY)
 
     items: Mapped[list["QuotationItem"]] = relationship(

@@ -7,9 +7,14 @@ import { create } from "zustand";
 type BuilderUiState = {
   expandedKey: string | null;
   setExpanded: (key: string | null) => void;
+  /** Ask the item list to open the item at this index (e.g. when the server rejects it). */
+  openRequest: number | null;
+  requestOpen: (index: number | null) => void;
 };
 
 export const useBuilderUi = create<BuilderUiState>((set) => ({
   expandedKey: null,
   setExpanded: (key) => set({ expandedKey: key }),
+  openRequest: null,
+  requestOpen: (index) => set({ openRequest: index }),
 }));

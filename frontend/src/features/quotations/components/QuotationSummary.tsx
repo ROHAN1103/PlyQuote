@@ -7,14 +7,16 @@ type Props = {
   totals: Totals | null;
   itemCount: number;
   incomplete: number;
+  settingsIncomplete: boolean;
+  gst: { enabled: boolean; label: string };
   stale: boolean;
   saving: boolean;
   readOnly: boolean;
   dirty: boolean;
 };
 
-const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
+const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
+  <div className={`flex items-baseline justify-between gap-3 py-1.5 text-sm ${strong ? "font-medium" : ""}`}>
     <dt className="text-muted">{label}</dt>
     <dd className="tabular-nums">{value}</dd>
   </div>
@@ -24,8 +26,10 @@ const Row = ({ label, value }: { label: string; value: string }) => (
  * One element, two layouts: a bar pinned to the bottom on phones (total + save), and a sticky panel
  * beside the form on large screens. Every figure comes from the backend's calculation.
  */
-export function QuotationSummary({ totals, itemCount, incomplete, stale, saving, readOnly, dirty }: Props) {
+export function QuotationSummary({ totals, itemCount, incomplete, settingsIncomplete, gst, stale, saving, readOnly, dirty }: Props) {
   const money = (v: string | undefined) => (v === undefined ? "—" : formatINR(v));
+  const hasDiscount = totals && Number(totals.discount) > 0;
+  const hasRounding = totals && Number(totals.rounding_adjustment) !== 0;
   return (
     <section
       aria-label="Quotation summary"
@@ -33,11 +37,13 @@ export function QuotationSummary({ totals, itemCount, incomplete, stale, saving,
     >
       <h2 className="hidden text-lg font-semibold lg:block">Summary</h2>
 
-      <dl className="mt-2 hidden divide-y divide-line lg:block">
+      <dl className={`mt-2 hidden divide-y divide-line lg:block ${stale ? "opacity-70" : ""}`}>
         <Row label={itemCount === 1 ? "1 item" : `${itemCount} items`} value={money(totals?.subtotal)} />
         <Row label="Additional charges" value={money(totals?.additional_charges)} />
-        <Row label="Discount" value={money(totals?.discount)} />
-        <Row label="GST" value={money(totals?.tax_amount)} />
+        {hasDiscount && <Row label="Discount" value={`− ${money(totals?.discount)}`} />}
+        {gst.enabled && <Row label="Taxable amount" value={money(totals?.taxable_amount)} />}
+        {gst.enabled && <Row label={gst.label} value={money(totals?.tax_amount)} />}
+        {hasRounding && <Row label="Rounding" value={money(totals?.rounding_adjustment)} />}
       </dl>
 
       <div className="flex items-center justify-between gap-3 lg:mt-3 lg:block">
@@ -53,12 +59,23 @@ export function QuotationSummary({ totals, itemCount, incomplete, stale, saving,
         </Button>
       </div>
 
-      {incomplete > 0 && (
+      {(incomplete > 0 || settingsIncomplete) && (
         <p className="mt-2 hidden text-xs text-danger lg:block">
-          {incomplete === 1 ? "1 item is" : `${incomplete} items are`} incomplete and not included in the total yet.
+          {incomplete > 0 && `${incomplete === 1 ? "1 item is" : `${incomplete} items are`} incomplete and not in the total yet. `}
+          {settingsIncomplete && "Some charge, discount or GST details need fixing before they count."}
         </p>
       )}
-      <p className="mt-2 hidden text-xs text-muted lg:block">Discounts, extra charges and GST aren't applied yet. They're coming in the next update.</p>
+
+      {totals && (
+        <details className="mt-3 hidden text-sm lg:block">
+          <summary className="cursor-pointer text-muted">Your costs (internal)</summary>
+          <dl className="mt-1 divide-y divide-line">
+            <Row label="Material cost" value={money(totals.material_cost)} />
+            <Row label="Profit on items" value={money(totals.profit)} />
+          </dl>
+          <p className="mt-1 text-xs text-muted">Never shown on the quotation you send.</p>
+        </details>
+      )}
     </section>
   );
 }

@@ -1,7 +1,7 @@
 import { api } from "@/lib/api";
 import {
   PAGE_SIZE, type ItemPayload, type Page, type PreviewResponse, type Quotation, type QuotationDefaults,
-  type QuotationFilters, type QuotationPayload, type QuotationSummary,
+  type QuotationFilters, type QuotationPayload, type QuotationSummary, type SettingsData,
 } from "../types";
 
 export const quotationsApi = {
@@ -16,5 +16,5 @@ export const quotationsApi = {
   create: (p: QuotationPayload) => api.post<Quotation>("/quotations", p),
   update: (id: string, rowVersion: number, p: QuotationPayload) => api.put<Quotation>(`/quotations/${id}`, { ...p, row_version: rowVersion }),
   remove: (id: string) => api.delete<void>(`/quotations/${id}`),
-  preview: (items: ItemPayload[]) => api.post<PreviewResponse>("/calculations/preview", { items }),
+  preview: (items: ItemPayload[], settings: SettingsData) => api.post<PreviewResponse>("/calculations/preview", { items, settings }),
 };

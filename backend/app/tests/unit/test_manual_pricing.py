@@ -47,9 +47,15 @@ def test_negative_rate_and_missing_values_are_rejected():
         calculate_item(ItemInput(pricing_method="manual", quantity=None, unit_rate=D("1")))
 
 
-def test_unknown_or_future_methods_are_refused_clearly():
-    with pytest.raises(CalculationError, match="not available yet"):
-        calculate_item(ItemInput(pricing_method="measurement", quantity=D("1"), unit_rate=D("1")))
+def test_unknown_methods_are_refused_clearly():
+    with pytest.raises(CalculationError, match="Unknown pricing method"):
+        calculate_item(ItemInput(pricing_method="telepathy", quantity=D("1"), unit_rate=D("1")))
+
+
+def test_errors_name_the_offending_field():
+    with pytest.raises(CalculationError) as exc:
+        calculate_item(manual("0", "10"))
+    assert exc.value.field == "quantity"
 
 
 def test_quotation_totals_are_the_sum_of_items():

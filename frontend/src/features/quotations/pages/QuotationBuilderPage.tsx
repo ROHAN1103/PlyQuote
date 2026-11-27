@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { useBuilderUi } from "@/store/quotationStore";
 import { FurnitureItemList } from "../components/FurnitureItemList";
+import { QuotationAdjustments } from "../components/QuotationAdjustments";
 import { QuotationHeader, QuotationTerms } from "../components/QuotationHeader";
 import { QuotationSummary } from "../components/QuotationSummary";
 import { useLivePreview } from "../hooks/useLivePreview";
@@ -17,9 +18,7 @@ import { useQuotation, useQuotationDefaults, useSaveQuotation } from "../hooks/u
 import {
   emptyForm, quotationFormSchema, serverFieldToFormField, toFormValues, toPayload, type QuotationFormValues,
 } from "../schemas/quotationSchema";
-import type { Quotation, QuotationDefaults, Totals } from "../types";
-
-const ZERO_TOTALS: Totals = { subtotal: "0.00", additional_charges: "0.00", discount: "0.00", tax_amount: "0.00", grand_total: "0.00" };
+import type { Quotation, QuotationDefaults } from "../types";
 
 export default function QuotationBuilderPage() {
   const { id } = useParams();
@@ -69,9 +68,15 @@ function BuilderForm({ quotation, defaults, reload }: Props) {
   });
   const { handleSubmit, reset, control, setError, formState: { isDirty } } = methods;
 
-  const items = useWatch({ control, name: "items" }) ?? [];
-  const preview = useLivePreview(items);
-  const totals = items.length === 0 ? ZERO_TOTALS : (preview.totals ?? quotation?.totals ?? null);
+  const values = useWatch({ control }) as QuotationFormValues;
+  const items = values.items ?? [];
+  const preview = useLivePreview(items, values);
+  const totals = preview.totals ?? quotation?.totals ?? null;
+  const gstRate = values.gst_rate_percent?.trim();
+  const gst = {
+    enabled: !!values.gst_enabled,
+    label: `GST${gstRate ? ` ${gstRate}%` : ""}${values.prices_include_tax ? " (included)" : ""}`,
+  };
   const readOnly = !!quotation && quotation.status !== "draft";
 
   useEffect(() => setExpanded(null), [setExpanded]);
@@ -107,6 +112,9 @@ function BuilderForm({ quotation, defaults, reload }: Props) {
           if (mapped.length === 0) return setFormError(e.message);
           mapped.forEach((f) => setError(serverFieldToFormField(f.field) as keyof QuotationFormValues, { message: f.message }));
           setFormError(e.message);
+          // Open the first item the server objected to, so the message is next to the field.
+          const first = mapped.map((f) => /^items\.(\d+)/.exec(f.field)).find(Boolean);
+          if (first) useBuilderUi.getState().requestOpen(Number(first[1]));
         },
       },
     );
@@ -155,12 +163,13 @@ function BuilderForm({ quotation, defaults, reload }: Props) {
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
             <div className="min-w-0 space-y-5">
               <QuotationHeader number={quotation?.quotation_number ?? null} status={quotation?.effective_status ?? "draft"} />
-              <FurnitureItemList itemTotals={preview.itemTotals} />
+              <FurnitureItemList itemResults={preview.itemResults} />
+              <QuotationAdjustments />
               <QuotationTerms />
             </div>
             <div>
               <QuotationSummary
-                totals={totals} itemCount={items.length} incomplete={preview.incomplete} stale={preview.stale}
+                totals={totals} itemCount={items.length} incomplete={preview.incomplete} settingsIncomplete={preview.settingsIncomplete} gst={gst} stale={preview.stale}
                 saving={save.isPending} readOnly={readOnly} dirty={isDirty || !quotation}
               />
             </div>

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.number_sequence import NumberSequence
 from app.models.quotation import Quotation
+from app.models.quotation_item import QuotationItem
 
 SORT_COLUMNS = {
     "quotation_date": lambda: Quotation.quotation_date,
@@ -30,7 +31,7 @@ class QuotationRepository:
         stmt = (
             select(Quotation)
             .where(Quotation.id == quotation_id, Quotation.company_id == company_id)
-            .options(selectinload(Quotation.items))
+            .options(selectinload(Quotation.items).selectinload(QuotationItem.materials))
         )
         if refresh:
             stmt = stmt.execution_options(populate_existing=True)
