@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ART_MAP } from '../components/RoomArt'
+// RoomArt import removed — using <img> directly
 import { WAIconSm } from '../components/Icons'
 import { ROOMS, TESTIMONIALS } from '../data/content'
 
@@ -31,7 +31,6 @@ function AnimatedNumber({ target, suffix = '' }) {
 /* ── Hero ── */
 function Hero() {
   const navigate = useNavigate()
-  const Art = ART_MAP.living
   return (
     <section style={{ minHeight:'100vh', background:'var(--sf)', display:'flex', alignItems:'center', padding:'100px clamp(20px,5vw,60px) 60px', position:'relative', overflow:'hidden' }}>
       <div style={{ position:'absolute', inset:0, pointerEvents:'none', backgroundImage:'repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(139,115,85,.03) 60px,rgba(139,115,85,.03) 61px)' }}/>
@@ -63,7 +62,9 @@ function Hero() {
           </div>
         </div>
         <div className="hero-art ha4" style={{ borderRadius:8, overflow:'hidden', aspectRatio:'4/3', boxShadow:'0 20px 60px rgba(139,115,85,.15)', border:'1px solid var(--sf2)' }}>
-          <Art />
+          <img src="/images/rooms/living-room.jpg" alt="Arav Interiors – Living Room Design"
+               style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+               onError={e => { e.currentTarget.style.display='none' }}/>
         </div>
       </div>
     </section>
@@ -84,18 +85,19 @@ function FeaturedSpaces() {
           <button onClick={() => navigate('/spaces')} className="btn-g" style={{ padding:'10px 20px', fontSize:'.83rem' }}>All Design Ideas</button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(270px,1fr))', gap:18 }}>
-          {ROOMS.map(({ label, room, desc }) => {
-            const Art = ART_MAP[room]
-            return (
-              <div key={label} className="room-card" onClick={() => navigate('/spaces')}>
-                <div style={{ aspectRatio:'4/3' }}><Art /></div>
-                <div style={{ padding:'16px 20px' }}>
-                  <div className="serif" style={{ fontSize:'1.25rem', fontWeight:500, marginBottom:3 }}>{label}</div>
-                  <div style={{ fontSize:'.8rem', color:'var(--lt)' }}>{desc}</div>
-                </div>
+          {ROOMS.map(({ label, room, desc }) => (
+            <div key={label} className="room-card" onClick={() => navigate('/spaces')}>
+              <div style={{ aspectRatio:'4/3', overflow:'hidden', background:'var(--sf2)' }}>
+                <img src={`/images/rooms/${room}.jpg`} alt={label} loading="lazy"
+                     style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'transform .4s' }}
+                     onError={e => { e.currentTarget.style.display='none' }}/>
               </div>
-            )
-          })}
+              <div style={{ padding:'16px 20px' }}>
+                <div className="serif" style={{ fontSize:'1.25rem', fontWeight:500, marginBottom:3 }}>{label}</div>
+                <div style={{ fontSize:'.8rem', color:'var(--lt)' }}>{desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
